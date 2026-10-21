@@ -487,9 +487,9 @@ elif S.page == 3:
 **Cars** — FAID: {txt(S.cars_faid)} | Nef3a: {txt(S.cars_nef3a)}
 
 **Properties** — FAID: {txt(S.props_faid)} | Certificate: {txt(S.props_cert)}
-""")
-      
+
 **Comments** — {txt(S.comments)}
+""")
 
     st.markdown("<div class='hint'>In the print window, choose your printer, or choose "
                 "<b>Save as PDF</b> to keep a copy on your computer.</div>", unsafe_allow_html=True)
