@@ -335,9 +335,9 @@ def build_print_html():
 <section><h2>4. Cars</h2><div class="row">
   {box("From FAID application", S.cars_faid)}{box("From Nef3a application", S.cars_nef3a)}</div></section>
 <section><h2>5. Properties</h2><div class="row">
-  {box("On FAID application", S.props_faid)}{box("From Certificate of Ownership", S.props_cert)}</div></section>
+   {box("On FAID application", S.props_faid)}{box("From Certificate of Ownership", S.props_cert)}</div></section>
+<section><h2>6. Additional Comments</h2><div class="row">{box("Comments", S.comments)}</div></section>
 </body></html>"""
-  <section><h2>6. Additional Comments</h2><div class="row">{box("Comments", S.comments)}</div></section>
 
 
 def print_buttons(where):
