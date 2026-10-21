@@ -378,7 +378,10 @@ stepper(S.page)
 if S.page == 1:
     section("Student Information")
 
-    text_field("Student name", "student_name", type="password" if S.hide_name else "default")
+    text_field("Student name", "student_name", autocomplete="off")
+    if S.hide_name:
+        st.markdown("<style>input[aria-label='Student name']{-webkit-text-security:disc;}</style>",
+                    unsafe_allow_html=True)
     st.checkbox("🔒 Hide name for privacy", key="hide_name")
     text_field("AUB ID", "aub_id")
     text_field("Slate ID", "slate_id")
