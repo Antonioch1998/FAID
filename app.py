@@ -98,7 +98,7 @@ button[data-testid="stNumberInputStepUp"], button[data-testid="stNumberInputStep
 DEFAULTS = {
     "page": 1,
     # Page 1 – student
-    "hide_name": False, "student_name": "", "aub_id": "", "slate_id": "",
+    "hide_name": True, "student_name": "", "aub_id": "", "slate_id": "",
     "school_name": "", "residing_in": "", "major": "", "class_year": None,
     "gpa": None, "deferred_payment": None, "outstanding_balance": None,
     "faid_pct": None, "merit_pct": None, "oa": "",
@@ -480,7 +480,6 @@ if S.page == 1:
     if S.hide_name:
         st.markdown("<style>input[aria-label='Student name']{-webkit-text-security:disc;}</style>",
                     unsafe_allow_html=True)
-    st.checkbox("🔒 Hide name for privacy", key="hide_name")
     text_field("AUB ID", "aub_id")
     text_field("Slate ID", "slate_id")
     text_field("School name", "school_name")
