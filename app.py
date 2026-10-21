@@ -226,7 +226,7 @@ def raw(v):
 def shown_name():
     if not S.student_name.strip():
         return "—"
-    return "•••••• (hidden)" if S.hide_name else S.student_name.strip()
+        return S.student_name.strip()
 
 
 def parent_works(p):
@@ -477,9 +477,6 @@ if S.page == 1:
     section("Student Information")
 
     text_field("Student name", "student_name", autocomplete="off")
-    if S.hide_name:
-        st.markdown("<style>input[aria-label='Student name']{-webkit-text-security:disc;}</style>",
-                    unsafe_allow_html=True)
     text_field("AUB ID", "aub_id")
     text_field("Slate ID", "slate_id")
     text_field("School name", "school_name")
