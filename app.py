@@ -106,6 +106,7 @@ DEFAULTS = {
     "sib_ids": [], "next_sib": 0,
     "cars_faid": "", "cars_nef3a": "",
     "props_faid": "", "props_cert": "",
+    "comments": "",
 }
 for p, _ in PARENTS:
     DEFAULTS.update({f"{p}_status": None, f"{p}_employer": "",
@@ -336,6 +337,7 @@ def build_print_html():
 <section><h2>5. Properties</h2><div class="row">
   {box("On FAID application", S.props_faid)}{box("From Certificate of Ownership", S.props_cert)}</div></section>
 </body></html>"""
+  <section><h2>6. Additional Comments</h2><div class="row">{box("Comments", S.comments)}</div></section>
 
 
 def print_buttons(where):
@@ -455,6 +457,10 @@ elif S.page == 3:
     section("Properties")
     area_field("Properties on FAID application", "props_faid")
     area_field("Properties from Certificate of Ownership", "props_cert")
+  
+    # ── Comments ──
+    section("Additional Comments")
+    area_field("Comments / additional comments", "comments", height=130)
 
     # ── Review ──
     section("Review & Print")
@@ -482,6 +488,8 @@ elif S.page == 3:
 
 **Properties** — FAID: {txt(S.props_faid)} | Certificate: {txt(S.props_cert)}
 """)
+      
+**Comments** — {txt(S.comments)}
 
     st.markdown("<div class='hint'>In the print window, choose your printer, or choose "
                 "<b>Save as PDF</b> to keep a copy on your computer.</div>", unsafe_allow_html=True)
