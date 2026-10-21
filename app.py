@@ -409,7 +409,7 @@ def build_print_html():
 </div>
 
 <div class="hero">
-  <div class="avatar">{e(name[0].upper() if name not in ("—", "Hidden for privacy") else "•")}</div>
+  <div class="avatar">{e(name[0].upper() if name not in ("—", "Case") else "•")}</div>
   <div><div class="who">{e(name)}</div>
   <div class="sub">{e(txt(S.major))} · {e(opt(S.class_year))}</div></div>
 </div>
