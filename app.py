@@ -255,7 +255,7 @@ def build_print_html():
     if not S.student_name.strip():
         name = "—"
     elif S.hide_name and not PRINT_HIDDEN_NAMES:
-        name = "Hidden for privacy"
+              name = "Case"
     else:
         name = S.student_name.strip()
 
