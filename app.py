@@ -266,7 +266,7 @@ def build_print_html():
         ("School name", txt(S.school_name)), ("Residing in", txt(S.residing_in)),
         ("Major", txt(S.major)), ("Class", opt(S.class_year)),
         ("Cumulative GPA", "—" if S.gpa is None else f"{S.gpa:.2f}"),
-        ("Deferred payment", money(S.deferred_payment)),
+        ("Deferred payment", opt(S.deferred_payment)),
         ("Outstanding balance", money(S.outstanding_balance)),
         ("FAID %", pct(S.faid_pct)), ("Merit %", pct(S.merit_pct)), ("O&A", txt(S.oa)),
     ])
@@ -335,7 +335,6 @@ def build_print_html():
   {box("From FAID application", S.cars_faid)}{box("From Nef3a application", S.cars_nef3a)}</div></section>
 <section><h2>5. Properties</h2><div class="row">
   {box("On FAID application", S.props_faid)}{box("From Certificate of Ownership", S.props_cert)}</div></section>
-<div class="sign"><div>Reviewed by</div><div>Signature</div><div>Date</div></div>
 </body></html>"""
 
 
@@ -389,7 +388,7 @@ if S.page == 1:
                  min_value=0.0, max_value=4.3, step=0.01, format="%.2f")
 
     section("Financial Standing")
-    money_field("Deferred payment (USD)", "deferred_payment")
+    select_field("Deferred payment", ["Yes", "No"], "deferred_payment")
     money_field("Outstanding balance (USD)", "outstanding_balance")
     pct_field("FAID %", "faid_pct")
     pct_field("Merit %", "merit_pct")
@@ -467,7 +466,7 @@ elif S.page == 3:
 - School: {txt(S.school_name)} | Residing in: {txt(S.residing_in)}
 - Major: {txt(S.major)} | Class: {opt(S.class_year)}
 - GPA: {'—' if S.gpa is None else f'{S.gpa:.2f}'}
-- Deferred payment: {money(S.deferred_payment)} | Outstanding balance: {money(S.outstanding_balance)}
+- Deferred payment: {opt(S.deferred_payment)} | Outstanding balance: {money(S.outstanding_balance)}
 - FAID: {pct(S.faid_pct)} | Merit: {pct(S.merit_pct)} | O&A: {txt(S.oa)}
 """)
         for p, label in PARENTS:
