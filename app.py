@@ -6,7 +6,7 @@ from datetime import datetime
 import streamlit as st
 
 # ═══════════════════════════ CONFIG ═══════════════════════════
-FORM_TITLE = "Financial Aid Application Brief"
+FORM_TITLE = "Financial Aid Review Form"
 FORM_SUBTITLE = "American University of Beirut"
 PRINT_HIDDEN_NAMES = False           # True → hidden names still appear on printouts
 
@@ -474,6 +474,63 @@ document.getElementById('p').onclick = function () {{
                        help="Saves the form as a file you can open in your browser and print later (Ctrl+P).")
 
 
+# ═════════════════════ SAVE / OPEN A CASE ═════════════════════
+# Answers are saved as a small file on the user's own computer — nothing is stored online.
+CASE_KEYS = [k for k in DEFAULTS if k not in ("page", "hide_name", "sib_ids", "next_sib")]
+SIB_FIELDS = ["school", "tuition", "isaub", "aubid", "faid"]
+
+
+def case_to_json():
+    data = {"form": FORM_TITLE, "saved": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "fields": {k: S[k] for k in CASE_KEYS},
+            "siblings": [{f: S[f"sib_{sid}_{f}"] for f in SIB_FIELDS} for sid in S.sib_ids]}
+    return json.dumps(data, ensure_ascii=False, indent=2)
+
+
+def _clean(value, default):
+    """Accept a loaded value only if it has the same kind as the field's default."""
+    if value is None:
+        return None if default is None else default
+    if isinstance(default, bool):
+        return bool(value)
+    if default is None:                      # number fields
+        return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) \
+            else (value if isinstance(value, str) and value in ("Yes", "No") else None)
+    return str(value)
+
+
+def load_case():
+    up = S.get("case_file")
+    if up is None:
+        return
+    try:
+        data = json.loads(up.getvalue().decode("utf-8"))
+        fields = data.get("fields", {})
+        for k in CASE_KEYS:
+            if k in fields:
+                default = DEFAULTS[k]
+                if k in ("class_year", "deferred_payment") or k.endswith("_status"):
+                    v = fields[k]
+                    S[k] = v if isinstance(v, str) and v else None
+                else:
+                    S[k] = _clean(fields[k], default)
+        for sid in S.sib_ids:
+            for k in sib_keys(sid):
+                S.pop(k, None)
+        S.sib_ids, S.next_sib = [], 0
+        for sib in data.get("siblings", []):
+            add_sib()
+            sid = S.sib_ids[-1]
+            for f in SIB_FIELDS:
+                key = f"sib_{sid}_{f}"
+                if f in sib:
+                    S[key] = _clean(sib[f], sib_keys(sid)[key])
+        S["load_msg"] = ("ok", f"Case loaded (saved {data.get('saved', 'earlier')}). "
+                               "Check the pages, make your changes, then print again.")
+    except Exception:
+        S["load_msg"] = ("err", "This file could not be opened. Choose a case file saved from this form.")
+
+
 # ═════════════════════════ HEADER ═════════════════════════════
 st.markdown(f"<div class='aub-header'><div class='t'>{FORM_TITLE}</div>"
             f"<div class='s'>{FORM_SUBTITLE}</div></div>", unsafe_allow_html=True)
@@ -482,6 +539,13 @@ stepper(S.page)
 
 # ═════════════════════════ PAGE 1 ═════════════════════════════
 if S.page == 1:
+    with st.expander("📂 Open a saved case"):
+        st.file_uploader("Choose a saved case file (.json)", type=["json"], key="case_file",
+                         on_change=load_case)
+    msg = S.pop("load_msg", None)
+    if msg:
+        (st.success if msg[0] == "ok" else st.error)(msg[1])
+
     section("Student Information")
 
     text_field("Student name", "student_name", autocomplete="off")
@@ -599,6 +663,11 @@ elif S.page == 3:
     st.markdown("<div class='hint'>In the print window, choose your printer, or choose "
                 "<b>Save as PDF</b> to keep a copy on your computer.</div>", unsafe_allow_html=True)
     print_buttons("page3")
+    case_id = S.aub_id.strip() or S.slate_id.strip() or "case"
+    st.download_button("💾 Save answers", case_to_json(), mime="application/json",
+                       file_name=f"case_{case_id}_{datetime.now():%Y-%m-%d}.json",
+                       help="Saves everything you entered to your computer. "
+                            "Open it later from page 1 to edit and reprint.")
 
     st.write("")
     b1, _, b2 = st.columns([1, 2, 1])
