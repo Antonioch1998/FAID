@@ -5,7 +5,7 @@ def build_print_html():
     if not S.student_name.strip():
         name = "—"
     elif S.hide_name and not PRINT_HIDDEN_NAMES:
-        name = "Hidden for privacy"
+        name = "Case"
     else:
         name = S.student_name.strip()
 
@@ -33,19 +33,23 @@ def build_print_html():
     # ── student ──
     student_tiles = "".join([
         tile("AUB ID", txt(S.aub_id)), tile("Slate ID", txt(S.slate_id)),
-        tile("Class", opt(S.class_year)), tile("Major", txt(S.major)),
-        tile("School name", txt(S.school_name)), tile("Residing in", txt(S.residing_in)),
+        tile("Residing in", txt(S.residing_in)),
     ])
-    stats = "".join([
+    # ── academic ──
+    academic_tiles = "".join([
         stat("Cumulative GPA", "—" if S.gpa is None else f"{S.gpa:.2f}"),
+        tile("Major", txt(S.major)), tile("Class", opt(S.class_year)),
+        tile("Previous school", txt(S.school_name)),
+    ])
+    # ── financial ──
+    stats = "".join([
         stat("FAID", pct(S.faid_pct)),
         stat("Merit", pct(S.merit_pct)),
         stat("Outstanding balance", money(S.outstanding_balance)),
+        f"<div class='stat'><div class='num'>{pill(S.deferred_payment)}</div>"
+        f"<div class='lbl'>Deferred payment</div></div>",
     ])
-    finance_tiles = (
-        f"<div class='tile'><div class='lbl'>Deferred payment</div><div class='val'>{pill(S.deferred_payment)}</div></div>"
-        + tile("O&A", txt(S.oa), wide=True)
-    )
+    finance_tiles = tile("O&A", txt(S.oa))
 
     # ── parents ──
     parents = ""
@@ -83,7 +87,7 @@ def build_print_html():
     return f"""<!doctype html><html><head><meta charset="utf-8">
 <title>{e(FORM_TITLE)} - {e(txt(S.aub_id))}</title>
 <style>
-  @page {{ size: A4; margin: 11mm 12mm; }}
+  @page {{ size: A4; margin: 9mm 11mm; }}
   * {{ box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
   body {{ margin: 0; font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
          font-size: 10.5px; color: #1f2328; background: #fff; }}
@@ -95,7 +99,7 @@ def build_print_html():
   .top h1 {{ margin: 2px 0 0; font-size: 19px; font-weight: 700; letter-spacing: .2px; }}
   .top .meta {{ text-align: right; font-size: 9.5px; opacity: .9; line-height: 1.5; }}
 
-  .hero {{ display: flex; align-items: center; gap: 14px; padding: 12px 4px 4px; }}
+  .hero {{ display: flex; align-items: center; gap: 12px; padding: 8px 4px 0; }}
   .avatar {{ width: 40px; height: 40px; border-radius: 50%; background: {RED_LIGHT}; color: {RED};
              display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;
              border: 1.5px solid #ecd3dc; flex: none; }}
@@ -103,24 +107,25 @@ def build_print_html():
   .hero .sub {{ color: #6b7280; font-size: 10px; margin-top: 1px; }}
 
   h2 {{ display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700;
-        color: {RED}; text-transform: uppercase; letter-spacing: 1.1px; margin: 14px 0 7px; }}
+        color: {RED}; text-transform: uppercase; letter-spacing: 1.1px; margin: 10px 0 6px; }}
   h2 .no {{ background: {RED}; color: #fff; border-radius: 6px; width: 18px; height: 18px;
             display: inline-flex; align-items: center; justify-content: center; font-size: 10px; }}
   h2::after {{ content: ""; flex: 1; height: 1px; background: #ecd3dc; }}
 
-  .grid {{ display: grid; gap: 6px; }}
+  .grid {{ display: grid; gap: 5px; }}
   .g3 {{ grid-template-columns: repeat(3, 1fr); }}
+  .g4 {{ grid-template-columns: repeat(4, 1fr); }}
   .g2 {{ grid-template-columns: repeat(2, 1fr); }}
   .g1 {{ grid-template-columns: 1fr; }}
-  .tile {{ background: #fafafa; border: 1px solid #eeeeee; border-radius: 9px; padding: 6px 9px; }}
+  .tile {{ background: #fafafa; border: 1px solid #eeeeee; border-radius: 9px; padding: 5px 9px; }}
   .tile.wide {{ grid-column: span 2; }}
   .lbl {{ font-size: 8.5px; color: #8a8f98; text-transform: uppercase; letter-spacing: .7px; }}
   .val {{ font-size: 11.5px; font-weight: 600; margin-top: 2px; word-break: break-word; }}
   .empty {{ color: #b5b9c0; font-weight: 400; }}
 
-  .stats {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 6px; }}
-  .stat {{ background: {RED_LIGHT}; border: 1px solid #f0d9e2; border-radius: 10px; padding: 8px 10px; }}
-  .stat .num {{ font-size: 17px; font-weight: 700; color: {RED}; }}
+  .stats {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 5px; }}
+  .stat {{ background: {RED_LIGHT}; border: 1px solid #f0d9e2; border-radius: 10px; padding: 6px 10px; }}
+  .stat .num {{ font-size: 17px; font-weight: 700; color: {RED}; min-height: 22px; }}
   .stat .num.empty {{ color: #c9a9b5; }}
 
   .pill {{ display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 9.5px; font-weight: 600; }}
@@ -129,9 +134,9 @@ def build_print_html():
   .pill.none {{ background: #fff; color: #9aa0a6; border: 1px dashed #d5d5d5; font-weight: 400; }}
 
   .two {{ display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }}
-  .card {{ border: 1px solid #eeeeee; border-radius: 12px; padding: 9px; background: #fff; }}
+  .card {{ border: 1px solid #eeeeee; border-radius: 12px; padding: 7px; background: #fff; }}
   .card-h {{ display: flex; justify-content: space-between; align-items: center;
-             font-weight: 700; font-size: 12px; margin: 0 2px 7px; }}
+             font-weight: 700; font-size: 12px; margin: 0 2px 5px; }}
 
   table {{ width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #eeeeee;
            border-radius: 10px; overflow: hidden; }}
@@ -149,7 +154,7 @@ def build_print_html():
                color: #9aa0a6; }}
 
   section {{ break-inside: avoid; }}
-  footer {{ margin-top: 16px; padding-top: 7px; border-top: 1px solid #eeeeee; display: flex;
+  footer {{ margin-top: 10px; padding-top: 6px; border-top: 1px solid #eeeeee; display: flex;
             justify-content: space-between; color: #9aa0a6; font-size: 8.5px; }}
 </style></head><body>
 
@@ -159,7 +164,7 @@ def build_print_html():
 </div>
 
 <div class="hero">
-  <div class="avatar">{e(name[0].upper() if name not in ("—", "Hidden for privacy") else "•")}</div>
+  <div class="avatar">{e(name[0].upper() if name not in ("—", "Case") else "•")}</div>
   <div><div class="who">{e(name)}</div>
   <div class="sub">{e(txt(S.major))} · {e(opt(S.class_year))}</div></div>
 </div>
@@ -167,21 +172,24 @@ def build_print_html():
 <section><h2><span class="no">1</span>Student Information</h2>
   <div class="grid g3">{student_tiles}</div></section>
 
-<section><h2><span class="no">2</span>Academic &amp; Financial Standing</h2>
+<section><h2><span class="no">2</span>Academic Information</h2>
+  <div class="grid g4">{academic_tiles}</div></section>
+
+<section><h2><span class="no">3</span>Financial Standing</h2>
   <div class="stats">{stats}</div>
-  <div class="grid g3">{finance_tiles}</div></section>
+  <div class="grid g1">{finance_tiles}</div></section>
 
-<section><h2><span class="no">3</span>Parents</h2><div class="two">{parents}</div></section>
+<section><h2><span class="no">4</span>Parents</h2><div class="two">{parents}</div></section>
 
-<section><h2><span class="no">4</span>Siblings</h2>{siblings}</section>
+<section><h2><span class="no">5</span>Siblings</h2>{siblings}</section>
 
-<section><h2><span class="no">5</span>Cars</h2><div class="two">
+<section><h2><span class="no">6</span>Cars</h2><div class="two">
   {note("From FAID application", S.cars_faid)}{note("From Nef3a application", S.cars_nef3a)}</div></section>
 
-<section><h2><span class="no">6</span>Properties</h2><div class="two">
+<section><h2><span class="no">7</span>Properties</h2><div class="two">
   {note("On FAID application", S.props_faid)}{note("From Certificate of Ownership", S.props_cert)}</div></section>
 
-<section><h2><span class="no">7</span>Additional Comments</h2>
+<section><h2><span class="no">8</span>Additional Comments</h2>
   <div class="note full"><div class="txt">{e(S.comments.strip()) if S.comments.strip() else "<span class='empty'>No comments</span>"}</div></div></section>
 
 <footer><span>{e(FORM_TITLE)} · {e(FORM_SUBTITLE)}</span><span>Confidential</span></footer>
