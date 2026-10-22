@@ -6,7 +6,7 @@ from datetime import datetime
 import streamlit as st
 
 # ═══════════════════════════ CONFIG ═══════════════════════════
-FORM_TITLE = "Financial Aid Review Form"
+FORM_TITLE = "Financial Aid Application Brief"
 FORM_SUBTITLE = "American University of Beirut"
 PRINT_HIDDEN_NAMES = False           # True → hidden names still appear on printouts
 
