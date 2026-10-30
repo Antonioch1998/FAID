@@ -234,9 +234,8 @@ def parent_works(p):
 
 
 def sib_school(sid):
-    """School name for a sibling; ticking 'AUB student' fills in AUB when the name is left empty."""
-    name = txt(S[f"sib_{sid}_school"])
-    return "AUB" if name == "—" and S[f"sib_{sid}_isaub"] else name
+    """School name for a sibling: AUB when 'AUB student' is ticked, otherwise the name typed in."""
+    return "AUB" if S[f"sib_{sid}_isaub"] else txt(S[f"sib_{sid}_school"])
 
 
 def siblings_summary():
@@ -621,10 +620,11 @@ elif S.page == 3:
     for n, sid in enumerate(S.sib_ids, 1):
         with st.container(border=True):
             sub(f"Sibling {n}")
-            text_field("School name", f"sib_{sid}_school")
-            money_field("Tuition fees (USD)", f"sib_{sid}_tuition")
             if st.checkbox("AUB student", key=f"sib_{sid}_isaub"):
                 text_field("AUB ID", f"sib_{sid}_aubid")
+            else:
+                text_field("School / university name", f"sib_{sid}_school")
+            money_field("Tuition fees (USD)", f"sib_{sid}_tuition")
             text_field("Financial assistance", f"sib_{sid}_faid")
             st.button(f"Remove sibling {n}", on_click=remove_sib, args=(sid,))
     st.button("＋ Add sibling", on_click=add_sib)
