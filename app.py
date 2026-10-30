@@ -237,10 +237,10 @@ def siblings_summary():
     parts = []
     for n, sid in enumerate(S.sib_ids, 1):
         line = (f"Sibling {n}: School={txt(S[f'sib_{sid}_school'])}; "
-                f"Tuition={money(S[f'sib_{sid}_tuition'])}")
+                f"Tuition={money(S[f'sib_{sid}_tuition'])}; "
+                f"Financial assistance={txt(S[f'sib_{sid}_faid'])}")
         if S[f"sib_{sid}_isaub"]:
-            line += (f"; AUB ID={txt(S[f'sib_{sid}_aubid'])}; "
-                     f"Financial assistance at AUB={txt(S[f'sib_{sid}_faid'])}")
+            line += f"; AUB ID={txt(S[f'sib_{sid}_aubid'])}"
         else:
             line += "; Not at AUB"
         parts.append(line)
@@ -322,12 +322,12 @@ def build_print_html():
             rows += (
                 f"<tr><td class='n'>{n}</td><td>{e(txt(S[f'sib_{sid}_school']))}</td>"
                 f"<td>{e(money(S[f'sib_{sid}_tuition']))}</td>"
+                f"<td>{e(txt(S[f'sib_{sid}_faid']))}</td>"
                 f"<td><span class='pill no'>{'Yes' if aub else 'No'}</span></td>"
-                f"<td>{e(txt(S[f'sib_{sid}_aubid'])) if aub else '—'}</td>"
-                f"<td>{e(txt(S[f'sib_{sid}_faid'])) if aub else '—'}</td></tr>"
+                f"<td>{e(txt(S[f'sib_{sid}_aubid'])) if aub else '—'}</td></tr>"
             )
         siblings = ("<table><thead><tr><th>#</th><th>School name</th><th>Tuition fees</th>"
-                    "<th>AUB student</th><th>AUB ID</th><th>Financial Assistance at AUB</th></tr></thead>"
+                    "<th>Financial Assistance</th><th>AUB student</th><th>AUB ID</th></tr></thead>"
                     f"<tbody>{rows}</tbody></table>")
     else:
         siblings = "<div class='emptybox'>No siblings listed</div>"
@@ -340,7 +340,7 @@ def build_print_html():
   @page {{ size: A4 landscape; margin: 8mm 10mm; }}
   * {{ box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
   body {{ margin: 0; font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-         font-size: 10.5px; color: #1f2328; background: #fff; }}
+         font-size: 12px; color: #1f2328; background: #fff; }}
 
   .top {{ background: linear-gradient(120deg, {RED} 0%, {RED_DARK} 100%); color: #fff;
           border-radius: 12px; padding: 14px 18px; display: flex; justify-content: space-between;
@@ -369,8 +369,8 @@ def build_print_html():
   .g1 {{ grid-template-columns: 1fr; }}
   .tile {{ background: #fafafa; border: 1px solid #eeeeee; border-radius: 9px; padding: 5px 9px; }}
   .tile.wide {{ grid-column: span 2; }}
-  .lbl {{ font-size: 8.5px; color: #8a8f98; text-transform: uppercase; letter-spacing: .7px; }}
-  .val {{ font-size: 11.5px; font-weight: 600; margin-top: 2px; word-break: break-word; }}
+  .lbl {{ font-size: 9.5px; color: #8a8f98; text-transform: uppercase; letter-spacing: .7px; }}
+  .val {{ font-size: 13.5px; font-weight: 600; margin-top: 2px; word-break: break-word; }}
   .empty {{ color: #b5b9c0; font-weight: 400; }}
 
   .stats {{ display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 5px; }}
@@ -378,7 +378,7 @@ def build_print_html():
   .stat .num {{ font-size: 17px; font-weight: 700; color: {RED}; min-height: 22px; }}
   .stat .num.empty {{ color: #c9a9b5; }}
 
-  .pill {{ display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 9.5px; font-weight: 600; }}
+  .pill {{ display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; }}
   .pill.yes {{ background: {RED}; color: #fff; }}
   .pill.no {{ background: #f1f1f1; color: #555; border: 1px solid #e2e2e2; }}
   .pill.none {{ background: #fff; color: #9aa0a6; border: 1px dashed #d5d5d5; font-weight: 400; }}
@@ -389,22 +389,22 @@ def build_print_html():
   .cols {{ display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }}
   .cols > div > section:first-child h2 {{ margin-top: 8px; }}
   .stack {{ display: grid; gap: 6px; }}
-  .status {{ font-size: 10.5px; font-weight: 500; color: #1f2328; }}
+  .status {{ font-size: 12.5px; font-weight: 500; color: #1f2328; }}
   .card {{ border: 1px solid #eeeeee; border-radius: 12px; padding: 7px; background: #fff; }}
   .card-h {{ display: flex; justify-content: space-between; align-items: center;
-             font-weight: 700; font-size: 12px; margin: 0 2px 5px; }}
+             font-weight: 700; font-size: 13.5px; margin: 0 2px 5px; }}
 
   table {{ width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #eeeeee;
            border-radius: 10px; overflow: hidden; }}
-  th {{ background: {RED}; color: #fff; font-size: 9px; text-transform: uppercase; letter-spacing: .6px;
+  th {{ background: {RED}; color: #fff; font-size: 10px; text-transform: uppercase; letter-spacing: .6px;
         text-align: left; padding: 6px 8px; font-weight: 600; }}
-  td {{ padding: 6px 8px; border-top: 1px solid #f0f0f0; font-weight: 500; }}
+  td {{ padding: 6px 8px; border-top: 1px solid #f0f0f0; font-weight: 500; font-size: 12.5px; }}
   tbody tr:nth-child(even) td {{ background: #fafafa; }}
   td.n {{ color: {RED}; font-weight: 700; width: 22px; }}
 
   .note {{ border: 1px solid #eeeeee; border-left: 3px solid {RED}; border-radius: 9px;
            padding: 7px 10px; background: #fff; }}
-  .note .txt {{ margin-top: 3px; font-size: 11px; white-space: pre-wrap; min-height: 26px; }}
+  .note .txt {{ margin-top: 3px; font-size: 13px; white-space: pre-wrap; min-height: 26px; }}
   .note.full .txt {{ min-height: 40px; }}
   .page {{ display: flex; flex-direction: column; min-height: 192mm; }}
   section.case {{ flex: 1; display: flex; flex-direction: column; break-inside: auto; }}
@@ -617,9 +617,9 @@ elif S.page == 3:
             sub(f"Sibling {n}")
             text_field("School name", f"sib_{sid}_school")
             money_field("Tuition fees (USD)", f"sib_{sid}_tuition")
+            text_field("Financial assistance", f"sib_{sid}_faid")
             if st.checkbox("AUB student", key=f"sib_{sid}_isaub"):
                 text_field("AUB ID", f"sib_{sid}_aubid")
-                text_field("Financial assistance at AUB", f"sib_{sid}_faid")
             st.button(f"Remove sibling {n}", on_click=remove_sib, args=(sid,))
     st.button("＋ Add sibling", on_click=add_sib)
 
