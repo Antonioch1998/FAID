@@ -233,10 +233,16 @@ def parent_works(p):
     return S[f"{p}_status"] in ("Employed", "Self-Employed")
 
 
+def sib_school(sid):
+    """School name for a sibling; ticking 'AUB student' fills in AUB when the name is left empty."""
+    name = txt(S[f"sib_{sid}_school"])
+    return "AUB" if name == "—" and S[f"sib_{sid}_isaub"] else name
+
+
 def siblings_summary():
     parts = []
     for n, sid in enumerate(S.sib_ids, 1):
-        line = (f"Sibling {n}: School={txt(S[f'sib_{sid}_school'])}; "
+        line = (f"Sibling {n}: School={sib_school(sid)}; "
                 f"Tuition={money(S[f'sib_{sid}_tuition'])}; "
                 f"Financial assistance={txt(S[f'sib_{sid}_faid'])}")
         if S[f"sib_{sid}_isaub"]:
@@ -320,7 +326,7 @@ def build_print_html():
         for n, sid in enumerate(S.sib_ids, 1):
             aub = S[f"sib_{sid}_isaub"]
             rows += (
-                f"<tr><td class='n'>{n}</td><td>{e(txt(S[f'sib_{sid}_school']))}</td>"
+                f"<tr><td class='n'>{n}</td><td>{e(sib_school(sid))}</td>"
                 f"<td>{e(money(S[f'sib_{sid}_tuition']))}</td>"
                 f"<td>{e(txt(S[f'sib_{sid}_faid']))}</td>"
                 f"<td><span class='pill no'>{'Yes' if aub else 'No'}</span></td>"
