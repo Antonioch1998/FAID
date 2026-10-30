@@ -339,7 +339,7 @@ def build_print_html():
 
     printed = datetime.now().strftime("%d %b %Y, %H:%M")
 
-    return f"""<!doctype html><html><head><meta charset="utf-8">
+    doc = f"""<!doctype html><html><head><meta charset="utf-8">
 <title>{e(FORM_TITLE)} - {e(txt(S.aub_id))}</title>
 <style>
   @page {{ size: A4 landscape; margin: 8mm 10mm; }}
@@ -375,7 +375,7 @@ def build_print_html():
   .tile {{ background: #fafafa; border: 1px solid #eeeeee; border-radius: 9px; padding: 5px 9px; }}
   .tile.wide {{ grid-column: span 2; }}
   .lbl {{ font-size: 9.5px; color: #8a8f98; text-transform: uppercase; letter-spacing: .7px; }}
-  .val {{ font-size: 13.5px; font-weight: 600; margin-top: 2px; word-break: break-word; }}
+  .val {{ font-size: 13.5px; font-weight: 600; margin-top: 2px; word-break: break-word; min-height: 1.3em; }}
   .empty {{ color: #b5b9c0; font-weight: 400; }}
 
   .stats {{ display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 5px; }}
@@ -455,6 +455,7 @@ def build_print_html():
 
 </div>
 </body></html>"""
+    return doc.replace(">—<", "><")   # empty fields print blank, without a dash
 
 
 def print_buttons(where):
