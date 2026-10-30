@@ -6,7 +6,7 @@ from datetime import datetime
 import streamlit as st
 
 # ═══════════════════════════ CONFIG ═══════════════════════════
-FORM_TITLE = "Financial Aid Application Brief"
+FORM_TITLE = "Financial Aid Application Summary"
 FORM_SUBTITLE = "American University of Beirut"
 PRINT_HIDDEN_NAMES = False           # True → hidden names still appear on printouts
 
@@ -101,7 +101,7 @@ DEFAULTS = {
     "hide_name": True, "student_name": "", "aub_id": "", "slate_id": "",
     "school_name": "", "residing_in": "", "major": "", "class_year": None,
     "gpa": None, "deferred_payment": None, "outstanding_balance": None,
-    "faid_pct": None, "merit_pct": None, "oa": "",
+    "faid_pct": None, "merit_pct": None, "oa": None,
     # Page 3 – siblings / cars / properties
     "sib_ids": [], "next_sib": 0,
     "cars_faid": "", "cars_nef3a": "",
@@ -115,7 +115,7 @@ for p, _ in PARENTS:
 
 def sib_keys(sid):
     return {f"sib_{sid}_school": "", f"sib_{sid}_tuition": None,
-            f"sib_{sid}_isaub": False, f"sib_{sid}_aubid": "", f"sib_{sid}_faid": None}
+            f"sib_{sid}_isaub": False, f"sib_{sid}_aubid": "", f"sib_{sid}_faid": ""}
 
 
 for k, v in DEFAULTS.items():
@@ -240,7 +240,7 @@ def siblings_summary():
                 f"Tuition={money(S[f'sib_{sid}_tuition'])}")
         if S[f"sib_{sid}_isaub"]:
             line += (f"; AUB ID={txt(S[f'sib_{sid}_aubid'])}; "
-                     f"AUB FAID={pct(S[f'sib_{sid}_faid'])}")
+                     f"Financial assistance at AUB={txt(S[f'sib_{sid}_faid'])}")
         else:
             line += "; Not at AUB"
         parts.append(line)
@@ -287,27 +287,27 @@ def build_print_html():
     ])
     # ── academic ──
     academic_tiles = "".join([
-        stat("Cumulative GPA", "—" if S.gpa is None else f"{S.gpa:.2f}"),
+        tile("Cumulative GPA", "—" if S.gpa is None else f"{S.gpa:.2f}"),
         tile("Major", txt(S.major)), tile("Class", opt(S.class_year)),
         tile("Previous school", txt(S.school_name)),
     ])
     # ── financial ──
-    stats = "".join([
-        stat("FAID", pct(S.faid_pct)),
-        stat("Merit", pct(S.merit_pct)),
-        stat("Outstanding balance", money(S.outstanding_balance)),
-        f"<div class='stat'><div class='num'>{pill(S.deferred_payment)}</div>"
-        f"<div class='lbl'>Deferred payment</div></div>",
+    finance_tiles = "".join([
+        tile("FAID", pct(S.faid_pct)),
+        tile("Merit", pct(S.merit_pct)),
+        tile("O&A", pct(S.oa)),
+        tile("Outstanding balance", money(S.outstanding_balance)),
+        tile("Deferred payment", opt(S.deferred_payment)),
     ])
-    finance_tiles = tile("O&A", txt(S.oa))
 
     # ── parents ──
     parents = ""
     for p, label in PARENTS:
         works = parent_works(p)
         parents += (
-            f"<div class='card'><div class='card-h'><span>{label}</span>{pill(S[f'{p}_status'])}</div>"
-            "<div class='grid g1'>"
+            f"<div class='card'><div class='card-h'><span>{label}</span>"
+            f"<span class='status'>{e(opt(S[f'{p}_status']))}</span></div>"
+            "<div class='grid g3'>"
             + tile("Employer", txt(S[f"{p}_employer"]) if works else "—")
             + tile("Job title", txt(S[f"{p}_job"]) if works else "—")
             + tile("Annual income", money(S[f"{p}_income"]))
@@ -322,12 +322,12 @@ def build_print_html():
             rows += (
                 f"<tr><td class='n'>{n}</td><td>{e(txt(S[f'sib_{sid}_school']))}</td>"
                 f"<td>{e(money(S[f'sib_{sid}_tuition']))}</td>"
-                f"<td>{pill('Yes' if aub else 'No')}</td>"
+                f"<td><span class='pill no'>{'Yes' if aub else 'No'}</span></td>"
                 f"<td>{e(txt(S[f'sib_{sid}_aubid'])) if aub else '—'}</td>"
-                f"<td>{e(pct(S[f'sib_{sid}_faid'])) if aub else '—'}</td></tr>"
+                f"<td>{e(txt(S[f'sib_{sid}_faid'])) if aub else '—'}</td></tr>"
             )
         siblings = ("<table><thead><tr><th>#</th><th>School name</th><th>Tuition fees</th>"
-                    "<th>AUB student</th><th>AUB ID</th><th>FAID % in AUB</th></tr></thead>"
+                    "<th>AUB student</th><th>AUB ID</th><th>Financial Assistance at AUB</th></tr></thead>"
                     f"<tbody>{rows}</tbody></table>")
     else:
         siblings = "<div class='emptybox'>No siblings listed</div>"
@@ -337,7 +337,7 @@ def build_print_html():
     return f"""<!doctype html><html><head><meta charset="utf-8">
 <title>{e(FORM_TITLE)} - {e(txt(S.aub_id))}</title>
 <style>
-  @page {{ size: A4; margin: 9mm 11mm; }}
+  @page {{ size: A4 landscape; margin: 8mm 10mm; }}
   * {{ box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
   body {{ margin: 0; font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
          font-size: 10.5px; color: #1f2328; background: #fff; }}
@@ -373,7 +373,7 @@ def build_print_html():
   .val {{ font-size: 11.5px; font-weight: 600; margin-top: 2px; word-break: break-word; }}
   .empty {{ color: #b5b9c0; font-weight: 400; }}
 
-  .stats {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 5px; }}
+  .stats {{ display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 5px; }}
   .stat {{ background: {RED_LIGHT}; border: 1px solid #f0d9e2; border-radius: 10px; padding: 6px 10px; }}
   .stat .num {{ font-size: 17px; font-weight: 700; color: {RED}; min-height: 22px; }}
   .stat .num.empty {{ color: #c9a9b5; }}
@@ -383,7 +383,12 @@ def build_print_html():
   .pill.no {{ background: #f1f1f1; color: #555; border: 1px solid #e2e2e2; }}
   .pill.none {{ background: #fff; color: #9aa0a6; border: 1px dashed #d5d5d5; font-weight: 400; }}
 
-  .two {{ display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }}
+  .two {{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }}
+  .g5 {{ grid-template-columns: repeat(5, 1fr); }}
+  .cols {{ display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }}
+  .cols > div > section:first-child h2 {{ margin-top: 8px; }}
+  .stack {{ display: grid; gap: 6px; }}
+  .status {{ font-size: 10.5px; font-weight: 500; color: #1f2328; }}
   .card {{ border: 1px solid #eeeeee; border-radius: 12px; padding: 7px; background: #fff; }}
   .card-h {{ display: flex; justify-content: space-between; align-items: center;
              font-weight: 700; font-size: 12px; margin: 0 2px 5px; }}
@@ -410,37 +415,33 @@ def build_print_html():
 
 <div class="top">
   <div><div class="kicker">{e(FORM_SUBTITLE)}</div><h1>{e(FORM_TITLE)}</h1></div>
-  <div class="meta">Printed {printed}<br>AUB ID: <b>{e(txt(S.aub_id))}</b></div>
 </div>
 
-<div class="hero">
-  <div class="avatar">{e(name[0].upper() if name not in ("—", "Case") else "•")}</div>
-  <div><div class="who">{e(name)}</div>
-  <div class="sub">{e(txt(S.major))} · {e(opt(S.class_year))}</div></div>
-</div>
-
-<section><h2><span class="no">1</span>Student Information</h2>
+<div class="cols"><div>
+<section><h2>Student Information</h2>
   <div class="grid g3">{student_tiles}</div></section>
 
-<section><h2><span class="no">2</span>Academic Information</h2>
+<section><h2>Academic Information</h2>
   <div class="grid g4">{academic_tiles}</div></section>
 
-<section><h2><span class="no">3</span>Financial Standing</h2>
-  <div class="stats">{stats}</div>
-  <div class="grid g1">{finance_tiles}</div></section>
+<section><h2>Financial Standing</h2>
+  <div class="grid g5">{finance_tiles}</div></section>
 
-<section><h2><span class="no">4</span>Parents</h2><div class="two">{parents}</div></section>
+<section><h2>Parents</h2><div class="stack">{parents}</div></section>
+</div><div>
 
-<section><h2><span class="no">5</span>Siblings</h2>{siblings}</section>
+<section><h2>Siblings</h2>{siblings}</section>
 
-<section><h2><span class="no">6</span>Cars</h2><div class="two">
+<section><h2>Cars</h2><div class="two">
   {note("From FAID application", S.cars_faid)}{note("From Nef3a application", S.cars_nef3a)}</div></section>
 
-<section><h2><span class="no">7</span>Properties</h2><div class="two">
+<section><h2>Properties</h2><div class="two">
   {note("On FAID application", S.props_faid)}{note("From Certificate of Ownership", S.props_cert)}</div></section>
 
-<section><h2><span class="no">8</span>Additional Comments</h2>
-  <div class="note full"><div class="txt">{e(S.comments.strip()) if S.comments.strip() else "<span class='empty'>No comments</span>"}</div></div></section>
+<section><h2>Case</h2>
+  <div class="note full"><div class="txt">{e(S.comments.strip()) if S.comments.strip() else "<span class='empty'>—</span>"}</div></div></section>
+
+</div></div>
 
 <footer><span>{e(FORM_TITLE)} · {e(FORM_SUBTITLE)}</span><span>Confidential</span></footer>
 </body></html>"""
@@ -563,7 +564,7 @@ if S.page == 1:
     money_field("Outstanding balance (USD)", "outstanding_balance")
     pct_field("FAID %", "faid_pct")
     pct_field("Merit %", "merit_pct")
-    text_field("O&A", "oa")
+    pct_field("O&A %", "oa")
 
     st.write("")
     if st.button("Next →", type="primary"):
@@ -613,7 +614,7 @@ elif S.page == 3:
             money_field("Tuition fees (USD)", f"sib_{sid}_tuition")
             if st.checkbox("AUB student", key=f"sib_{sid}_isaub"):
                 text_field("AUB ID", f"sib_{sid}_aubid")
-                pct_field("FAID % in AUB", f"sib_{sid}_faid")
+                text_field("Financial assistance at AUB", f"sib_{sid}_faid")
             st.button(f"Remove sibling {n}", on_click=remove_sib, args=(sid,))
     st.button("＋ Add sibling", on_click=add_sib)
 
@@ -628,8 +629,8 @@ elif S.page == 3:
     area_field("Properties from Certificate of Ownership", "props_cert")
 
     # ── Comments ──
-    section("Additional Comments")
-    area_field("Comments / additional comments", "comments", height=130)
+    section("Case")
+    area_field("Case", "comments", height=130)
 
     # ── Review ──
     section("Review & Print")
@@ -642,7 +643,7 @@ elif S.page == 3:
 - Major: {txt(S.major)} | Class: {opt(S.class_year)}
 - GPA: {'—' if S.gpa is None else f'{S.gpa:.2f}'}
 - Deferred payment: {opt(S.deferred_payment)} | Outstanding balance: {money(S.outstanding_balance)}
-- FAID: {pct(S.faid_pct)} | Merit: {pct(S.merit_pct)} | O&A: {txt(S.oa)}
+- FAID: {pct(S.faid_pct)} | Merit: {pct(S.merit_pct)} | O&A: {pct(S.oa)}
 """)
         for p, label in PARENTS:
             extra = (f" | Employer: {txt(S[f'{p}_employer'])} | Job: {txt(S[f'{p}_job'])}"
@@ -657,7 +658,7 @@ elif S.page == 3:
 
 **Properties** — FAID: {txt(S.props_faid)} | Certificate: {txt(S.props_cert)}
 
-**Comments** — {txt(S.comments)}
+**Case** — {txt(S.comments)}
 """)
 
     st.markdown("<div class='hint'>In the print window, choose your printer, or choose "
