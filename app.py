@@ -385,6 +385,7 @@ def build_print_html():
 
   .two {{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }}
   .g5 {{ grid-template-columns: repeat(5, 1fr); }}
+  .g5 .tile {{ display: flex; flex-direction: column; justify-content: space-between; }}
   .cols {{ display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }}
   .cols > div > section:first-child h2 {{ margin-top: 8px; }}
   .stack {{ display: grid; gap: 6px; }}
@@ -405,6 +406,9 @@ def build_print_html():
            padding: 7px 10px; background: #fff; }}
   .note .txt {{ margin-top: 3px; font-size: 11px; white-space: pre-wrap; min-height: 26px; }}
   .note.full .txt {{ min-height: 40px; }}
+  .page {{ display: flex; flex-direction: column; min-height: 192mm; }}
+  section.case {{ flex: 1; display: flex; flex-direction: column; break-inside: auto; }}
+  section.case .note {{ flex: 1; }}
   .emptybox {{ border: 1px dashed #dcdcdc; border-radius: 10px; padding: 9px; text-align: center;
                color: #9aa0a6; }}
 
@@ -413,6 +417,7 @@ def build_print_html():
             justify-content: space-between; color: #9aa0a6; font-size: 8.5px; }}
 </style></head><body>
 
+<div class="page">
 <div class="top">
   <div><div class="kicker">{e(FORM_SUBTITLE)}</div><h1>{e(FORM_TITLE)}</h1></div>
 </div>
@@ -438,12 +443,13 @@ def build_print_html():
 <section><h2>Properties</h2><div class="two">
   {note("On FAID application", S.props_faid)}{note("From Certificate of Ownership", S.props_cert)}</div></section>
 
-<section><h2>Case</h2>
-  <div class="note full"><div class="txt">{e(S.comments.strip()) if S.comments.strip() else "<span class='empty'>—</span>"}</div></div></section>
-
 </div></div>
 
+<section class="case"><h2>Case</h2>
+  <div class="note full"><div class="txt">{e(S.comments.strip()) if S.comments.strip() else "<span class='empty'>—</span>"}</div></div></section>
+
 <footer><span>{e(FORM_TITLE)} · {e(FORM_SUBTITLE)}</span><span>Confidential</span></footer>
+</div>
 </body></html>"""
 
 
