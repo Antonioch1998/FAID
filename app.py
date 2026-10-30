@@ -329,11 +329,10 @@ def build_print_html():
                 f"<tr><td class='n'>{n}</td><td>{e(sib_school(sid))}</td>"
                 f"<td>{e(money(S[f'sib_{sid}_tuition']))}</td>"
                 f"<td>{e(txt(S[f'sib_{sid}_faid']))}</td>"
-                f"<td><span class='pill no'>{'Yes' if aub else 'No'}</span></td>"
                 f"<td>{e(txt(S[f'sib_{sid}_aubid'])) if aub else '—'}</td></tr>"
             )
         siblings = ("<table><thead><tr><th>#</th><th>School name</th><th>Tuition fees</th>"
-                    "<th>Financial Assistance</th><th>AUB student</th><th>AUB ID</th></tr></thead>"
+                    "<th>Financial Assistance</th><th>AUB ID</th></tr></thead>"
                     f"<tbody>{rows}</tbody></table>")
     else:
         siblings = "<div class='emptybox'>No siblings listed</div>"
@@ -623,9 +622,9 @@ elif S.page == 3:
             sub(f"Sibling {n}")
             text_field("School name", f"sib_{sid}_school")
             money_field("Tuition fees (USD)", f"sib_{sid}_tuition")
-            text_field("Financial assistance", f"sib_{sid}_faid")
             if st.checkbox("AUB student", key=f"sib_{sid}_isaub"):
                 text_field("AUB ID", f"sib_{sid}_aubid")
+            text_field("Financial assistance", f"sib_{sid}_faid")
             st.button(f"Remove sibling {n}", on_click=remove_sib, args=(sid,))
     st.button("＋ Add sibling", on_click=add_sib)
 
