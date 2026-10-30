@@ -671,7 +671,7 @@ elif S.page == 3:
     print_buttons("page3")
     case_id = S.aub_id.strip() or S.slate_id.strip() or "case"
     st.download_button("💾 Save answers", case_to_json(), mime="application/json",
-                       file_name=f"case_{case_id}_{datetime.now():%Y-%m-%d}.json",
+                       file_name=f"{case_id}_{datetime.now():%Y-%m-%d}.json",
                        help="Saves everything you entered to your computer. "
                             "Open it later from page 1 to edit and reprint.")
 
