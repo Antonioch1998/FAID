@@ -448,7 +448,6 @@ def build_print_html():
 <section class="case"><h2>Case</h2>
   <div class="note full"><div class="txt">{e(S.comments.strip()) if S.comments.strip() else "<span class='empty'>—</span>"}</div></div></section>
 
-<footer><span>{e(FORM_TITLE)} · {e(FORM_SUBTITLE)}</span><span>Confidential</span></footer>
 </div>
 </body></html>"""
 
