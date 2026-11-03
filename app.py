@@ -99,7 +99,7 @@ DEFAULTS = {
     "page": 1,
     # Page 1 – student
     "hide_name": True, "student_name": "", "aub_id": "", "slate_id": "",
-    "school_name": "", "residing_in": "", "major": "", "class_year": None,
+    "school_name": "", "residing_in": "", "major": "", "class_year": None, "class_other": "",
     "gpa": None, "deferred_payment": None, "outstanding_balance": None,
     "faid_pct": None, "merit_pct": None, "oa": None,
     # Page 3 – siblings / cars / properties
@@ -110,7 +110,9 @@ DEFAULTS = {
 }
 for p, _ in PARENTS:
     DEFAULTS.update({f"{p}_status": None, f"{p}_employer": "",
-                     f"{p}_job": "", f"{p}_income": None})
+                     f"{p}_job": "", f"{p}_income": None,
+                     f"{p}_had_prev": False,
+                     f"{p}_occ_ids": [], f"{p}_next_occ": 0})
 
 
 def sib_keys(sid):
@@ -118,15 +120,29 @@ def sib_keys(sid):
             f"sib_{sid}_isaub": False, f"sib_{sid}_aubid": "", f"sib_{sid}_faid": ""}
 
 
+def occ_keys(p, oid):
+    """Fields of an extra occupation for a parent (p = 'father' or 'mother')."""
+    return {f"{p}_occ{oid}_employer": "", f"{p}_occ{oid}_job": "", f"{p}_occ{oid}_income": None}
+
+
+def dynamic_keys():
+    keys = {}
+    for sid in st.session_state.sib_ids:
+        keys.update(sib_keys(sid))
+    for p, _ in PARENTS:
+        for oid in st.session_state[f"{p}_occ_ids"]:
+            keys.update(occ_keys(p, oid))
+    return keys
+
+
 for k, v in DEFAULTS.items():
     if k not in st.session_state:
         st.session_state[k] = copy.deepcopy(v)
-for sid in st.session_state.sib_ids:
-    for k, v in sib_keys(sid).items():
-        st.session_state.setdefault(k, v)
+for k, v in dynamic_keys().items():
+    st.session_state.setdefault(k, v)
 
 # Keep every answer alive when moving between pages
-for k in list(DEFAULTS) + [k for s in st.session_state.sib_ids for k in sib_keys(s)]:
+for k in list(DEFAULTS) + list(dynamic_keys()):
     st.session_state[k] = st.session_state[k]
 
 S = st.session_state
@@ -196,6 +212,51 @@ def remove_sib(sid):
     S.sib_ids = [s for s in S.sib_ids if s != sid]
     for k in sib_keys(sid):
         S.pop(k, None)
+
+
+def add_occ(p):
+    oid = S[f"{p}_next_occ"]
+    S[f"{p}_next_occ"] = oid + 1
+    S[f"{p}_occ_ids"] = S[f"{p}_occ_ids"] + [oid]
+    for k, v in occ_keys(p, oid).items():
+        S[k] = v
+
+
+def remove_occ(p, oid):
+    S[f"{p}_occ_ids"] = [o for o in S[f"{p}_occ_ids"] if o != oid]
+    for k in occ_keys(p, oid):
+        S.pop(k, None)
+
+
+def parent_main(p):
+    """Main occupation rows for a parent as (label, value) pairs, or None when an
+    unemployed parent has no previous employment."""
+    status = S[f"{p}_status"]
+    emp, job, inc = txt(S[f"{p}_employer"]), txt(S[f"{p}_job"]), money(S[f"{p}_income"])
+    if status == "Self-Employed":
+        return [("Business", emp), ("Job title", job), ("Annual income", inc)]
+    if status == "Employed":
+        return [("Employer", emp), ("Job title", job), ("Annual income", inc)]
+    if status == "Unemployed":
+        if S[f"{p}_had_prev"]:
+            return [("Previous employer", emp), ("Previous job title", job),
+                    ("Previous annual income", inc)]
+        return None
+    return [("Employer", "—"), ("Job title", "—"), ("Annual income", inc)]
+
+
+def filled_occs(p):
+    """Extra occupations that actually have something entered (empty ones are not printed)."""
+    return [oid for oid in S[f"{p}_occ_ids"]
+            if S[f"{p}_occ{oid}_employer"].strip() or S[f"{p}_occ{oid}_job"].strip()
+            or S[f"{p}_occ{oid}_income"] is not None]
+
+
+def class_text():
+    """The class to show: the typed-in class when 'Other' is chosen, otherwise the chosen one."""
+    if S.class_year == "Other" and S.class_other.strip():
+        return S.class_other.strip()
+    return opt(S.class_year)
 
 
 def reset_form():
@@ -293,7 +354,7 @@ def build_print_html():
     # ── academic ──
     academic_tiles = "".join([
         tile("Cumulative GPA", "—" if S.gpa is None else f"{S.gpa:.2f}"),
-        tile("Major", txt(S.major)), tile("Class", opt(S.class_year)),
+        tile("Major", txt(S.major)), tile("Class", class_text()),
         tile("Previous school", txt(S.school_name)),
     ])
     # ── financial ──
@@ -309,15 +370,23 @@ def build_print_html():
     parents = ""
     for p, label in PARENTS:
         works = parent_works(p)
-        parents += (
-            f"<div class='card'><div class='card-h'><span>{label}</span>"
-            f"<span class='status'>{e(opt(S[f'{p}_status']))}</span></div>"
-            "<div class='grid g3'>"
-            + tile("Employer", txt(S[f"{p}_employer"]) if works else "—")
-            + tile("Job title", txt(S[f"{p}_job"]) if works else "—")
-            + tile("Annual income", money(S[f"{p}_income"]))
-            + "</div></div>"
-        )
+        main = parent_main(p)
+        parents += (f"<div class='card'><div class='card-h'><span>{label}</span>"
+                    f"<span class='status'>{e(opt(S[f'{p}_status']))}</span></div>")
+        if main is None:
+            parents += "<div class='noemp'>No previous employment</div>"
+        else:
+            parents += "<div class='grid g3'>" + "".join(tile(l, v) for l, v in main) + "</div>"
+        if works:
+            for n, oid in enumerate(filled_occs(p), 2):
+                parents += (
+                    f"<div class='occ-l'>Occupation {n}</div><div class='grid g3'>"
+                    + tile("Employer", txt(S[f"{p}_occ{oid}_employer"]))
+                    + tile("Job title", txt(S[f"{p}_occ{oid}_job"]))
+                    + tile("Annual income", money(S[f"{p}_occ{oid}_income"]))
+                    + "</div>"
+                )
+        parents += "</div>"
 
     # ── siblings ──
     if S.sib_ids:
@@ -393,6 +462,10 @@ def build_print_html():
   .cols {{ display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }}
   .cols > div > section:first-child h2 {{ margin-top: 8px; }}
   .stack {{ display: grid; gap: 6px; }}
+  .noemp {{ background: #fafafa; border: 1px solid #eeeeee; border-radius: 9px; padding: 9px;
+            font-size: 13px; font-weight: 600; }}
+  .occ-l {{ font-size: 9.5px; color: #8a8f98; text-transform: uppercase; letter-spacing: .7px;
+            margin: 6px 2px 3px; font-weight: 600; }}
   .status {{ font-size: 12.5px; font-weight: 500; color: #1f2328; }}
   .card {{ border: 1px solid #eeeeee; border-radius: 12px; padding: 7px; background: #fff; }}
   .card-h {{ display: flex; justify-content: space-between; align-items: center;
@@ -487,14 +560,18 @@ document.getElementById('p').onclick = function () {{
 
 # ═════════════════════ SAVE / OPEN A CASE ═════════════════════
 # Answers are saved as a small file on the user's own computer — nothing is stored online.
-CASE_KEYS = [k for k in DEFAULTS if k not in ("page", "hide_name", "sib_ids", "next_sib")]
+CASE_KEYS = [k for k in DEFAULTS if k not in ("page", "hide_name", "sib_ids", "next_sib")
+             and not k.endswith(("_occ_ids", "_next_occ"))]
+OCC_FIELDS = ["employer", "job", "income"]
 SIB_FIELDS = ["school", "tuition", "isaub", "aubid", "faid"]
 
 
 def case_to_json():
     data = {"form": FORM_TITLE, "saved": datetime.now().strftime("%Y-%m-%d %H:%M"),
             "fields": {k: S[k] for k in CASE_KEYS},
-            "siblings": [{f: S[f"sib_{sid}_{f}"] for f in SIB_FIELDS} for sid in S.sib_ids]}
+            "siblings": [{f: S[f"sib_{sid}_{f}"] for f in SIB_FIELDS} for sid in S.sib_ids],
+            "occupations": {p: [{f: S[f"{p}_occ{oid}_{f}"] for f in OCC_FIELDS}
+                                for oid in S[f"{p}_occ_ids"]] for p, _ in PARENTS}}
     return json.dumps(data, ensure_ascii=False, indent=2)
 
 
@@ -536,6 +613,19 @@ def load_case():
                 key = f"sib_{sid}_{f}"
                 if f in sib:
                     S[key] = _clean(sib[f], sib_keys(sid)[key])
+        occupations = data.get("occupations", {})
+        for p, _ in PARENTS:
+            for oid in S[f"{p}_occ_ids"]:
+                for k in occ_keys(p, oid):
+                    S.pop(k, None)
+            S[f"{p}_occ_ids"], S[f"{p}_next_occ"] = [], 0
+            for occ in occupations.get(p, []):
+                add_occ(p)
+                oid = S[f"{p}_occ_ids"][-1]
+                for f in OCC_FIELDS:
+                    key = f"{p}_occ{oid}_{f}"
+                    if f in occ:
+                        S[key] = _clean(occ[f], occ_keys(p, oid)[key])
         S["load_msg"] = ("ok", f"Case loaded (saved {data.get('saved', 'earlier')}). "
                                "Check the pages, make your changes, then print again.")
     except Exception:
@@ -566,6 +656,8 @@ if S.page == 1:
     text_field("Residing in", "residing_in")
     text_field("Major", "major")
     select_field("Class", CLASSES, "class_year")
+    if S.class_year == "Other":
+        text_field("Specify the class", "class_other")
     number_field("Cumulative GPA (0.00 – 4.30)", "gpa",
                  min_value=0.0, max_value=4.3, step=0.01, format="%.2f")
 
@@ -596,10 +688,27 @@ elif S.page == 2:
         section(f"{label}")
         select_field("Employment status", STATUSES, f"{p}_status")
         if parent_works(p):
-            text_field("Employer" if S[f"{p}_status"] == "Employed" else "Employer / business name",
+            text_field("Employer" if S[f"{p}_status"] == "Employed" else "Business name",
                        f"{p}_employer")
             text_field("Job title", f"{p}_job")
-        money_field("Annual income (USD)", f"{p}_income")
+            money_field("Annual income (USD)", f"{p}_income")
+        elif S[f"{p}_status"] == "Unemployed":
+            if st.checkbox("Had a previous occupation", key=f"{p}_had_prev"):
+                text_field("Previous employer", f"{p}_employer")
+                text_field("Previous job title", f"{p}_job")
+                money_field("Previous annual income (USD)", f"{p}_income")
+        else:
+            money_field("Annual income (USD)", f"{p}_income")
+        if parent_works(p):
+            for n, oid in enumerate(S[f"{p}_occ_ids"], 2):
+                with st.container(border=True):
+                    sub(f"{label} – occupation {n}")
+                    text_field("Employer", f"{p}_occ{oid}_employer")
+                    text_field("Job title", f"{p}_occ{oid}_job")
+                    money_field("Annual income (USD)", f"{p}_occ{oid}_income")
+                    st.button(f"Remove occupation {n}", key=f"rm_{p}_occ{oid}",
+                              on_click=remove_occ, args=(p, oid))
+            st.button("＋ Add occupation", key=f"add_occ_{p}", on_click=add_occ, args=(p,))
 
     st.write("")
     b1, _, b2 = st.columns([1, 2, 1])
@@ -651,16 +760,21 @@ elif S.page == 3:
 - Name: {shown_name()}
 - AUB ID: {txt(S.aub_id)} | Slate ID: {txt(S.slate_id)}
 - School: {txt(S.school_name)} | Residing in: {txt(S.residing_in)}
-- Major: {txt(S.major)} | Class: {opt(S.class_year)}
+- Major: {txt(S.major)} | Class: {class_text()}
 - GPA: {'—' if S.gpa is None else f'{S.gpa:.2f}'}
 - Deferred payment: {opt(S.deferred_payment)} | Outstanding balance: {money(S.outstanding_balance)}
 - FAID: {pct(S.faid_pct)} | Merit: {pct(S.merit_pct)} | O&A: {pct(S.oa)}
 """)
         for p, label in PARENTS:
-            extra = (f" | Employer: {txt(S[f'{p}_employer'])} | Job: {txt(S[f'{p}_job'])}"
-                     if parent_works(p) else "")
-            st.markdown(f"**{label}:** {opt(S[f'{p}_status'])}{extra} | "
-                        f"Income: {money(S[f'{p}_income'])}")
+            main = parent_main(p)
+            details = ("No previous employment" if main is None
+                       else " | ".join(f"{l}: {v}" for l, v in main))
+            st.markdown(f"**{label}:** {opt(S[f'{p}_status'])} | {details}")
+            if parent_works(p):
+                for n, oid in enumerate(filled_occs(p), 2):
+                    st.markdown(f"- Occupation {n}: Employer: {txt(S[f'{p}_occ{oid}_employer'])} | "
+                                f"Job: {txt(S[f'{p}_occ{oid}_job'])} | "
+                                f"Income: {money(S[f'{p}_occ{oid}_income'])}")
         st.markdown("**Siblings:** " + ("None" if not S.sib_ids else ""))
         for line in siblings_summary():
             st.markdown(f"- {line}")
