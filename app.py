@@ -167,8 +167,9 @@ def pct_field(label, key):
 
 
 def select_field(label, options, key):
-    st.selectbox(label, options, key=key, index=None, placeholder=label,
-                 label_visibility="collapsed")
+    # Pick an option from the list, or type any other text and press Enter.
+    st.selectbox(label, options, key=key, index=None, placeholder=f"{label} (choose or type)",
+                 label_visibility="collapsed", accept_new_options=True)
 
 
 def area_field(label, key, height=100):
@@ -235,7 +236,7 @@ def parent_main(p):
     emp, job, inc = txt(S[f"{p}_employer"]), txt(S[f"{p}_job"]), money(S[f"{p}_income"])
     if status == "Self-Employed":
         return [("Business", emp), ("Job title", job), ("Annual income", inc)]
-    if status == "Employed":
+    if parent_works(p):
         return [("Employer", emp), ("Job title", job), ("Annual income", inc)]
     if status == "Unemployed":
         if S[f"{p}_had_prev"]:
@@ -312,7 +313,8 @@ def shown_name():
 
 
 def parent_works(p):
-    return S[f"{p}_status"] in ("Employed", "Self-Employed")
+    """Any status except 'Unemployed' (or nothing chosen) counts as having an occupation."""
+    return S[f"{p}_status"] not in (None, "", "Unemployed")
 
 
 def sib_school(sid):
@@ -695,8 +697,6 @@ if S.page == 1:
         errors = []
         if not S.aub_id.strip() and not S.slate_id.strip():
             errors.append("Enter at least an AUB ID or a Slate ID.")
-        if S.aub_id.strip() and not S.aub_id.strip().isdigit():
-            errors.append("AUB ID must contain digits only.")
         if errors:
             for e in errors:
                 st.error(e)
@@ -710,7 +710,7 @@ elif S.page == 2:
         section(f"{label}")
         select_field("Employment status", STATUSES, f"{p}_status")
         if parent_works(p):
-            text_field("Employer" if S[f"{p}_status"] == "Employed" else "Business name",
+            text_field("Business name" if S[f"{p}_status"] == "Self-Employed" else "Employer",
                        f"{p}_employer")
             text_field("Job title", f"{p}_job")
             money_field("Annual income (USD)", f"{p}_income")
