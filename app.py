@@ -1,6 +1,7 @@
 import copy
 import html
 import json
+import re
 from datetime import datetime
 
 import streamlit as st
@@ -281,20 +282,34 @@ def _num(v):
         return None
 
 
+_SEP = re.compile(r"\s*/\s*")
+
+
+def parts(v):
+    """Split a field into its values: two entries typed with / between them."""
+    return [x for x in _SEP.split(str(v).strip()) if x]
+
+
 def money(v):
     v = "" if v is None else str(v).strip()
     if not v:
         return "—"
-    n = _num(v)
-    return f"${n:,.0f}" if n is not None else v
+    out = []
+    for x in parts(v):
+        n = _num(x)
+        out.append(f"${n:,.0f}" if n is not None else x)
+    return " / ".join(out)
 
 
 def pct(v):
     v = "" if v is None else str(v).strip()
     if not v:
         return "—"
-    n = _num(v)
-    return f"{n:g}%" if n is not None else v
+    out = []
+    for x in parts(v):
+        n = _num(x)
+        out.append(f"{n:g}%" if n is not None else x)
+    return " / ".join(out)
 
 
 def gpa_text():
@@ -348,11 +363,16 @@ def build_print_html():
     else:
         name = S.student_name.strip()
 
+    def lines(value):
+        """Two values typed in one field (separated by /) print one under the other."""
+        v = str(value).strip()
+        return "<br>".join(e(x) for x in parts(v)) if v and v != "—" else e(v)
+
     def tile(label, value, wide=False):
         v = value if str(value).strip() else "—"
         empty = " empty" if v == "—" else ""
         return (f"<div class='tile{' wide' if wide else ''}'><div class='lbl'>{e(label)}</div>"
-                f"<div class='val{empty}'>{e(v)}</div></div>")
+                f"<div class='val{empty}'>{lines(v)}</div></div>")
 
     def stat(label, value):
         empty = " empty" if value == "—" else ""
@@ -418,9 +438,9 @@ def build_print_html():
             aub = S[f"sib_{sid}_isaub"]
             rows += (
                 f"<tr><td class='n'>{n}</td><td>{e(sib_school(sid))}</td>"
-                f"<td>{e(money(S[f'sib_{sid}_tuition']))}</td>"
-                f"<td>{e(txt(S[f'sib_{sid}_faid']))}</td>"
-                f"<td>{e(txt(S[f'sib_{sid}_aubid'])) if aub else '—'}</td></tr>"
+                f"<td>{lines(money(S[f'sib_{sid}_tuition']))}</td>"
+                f"<td>{lines(txt(S[f'sib_{sid}_faid']))}</td>"
+                f"<td>{lines(txt(S[f'sib_{sid}_aubid'])) if aub else '—'}</td></tr>"
             )
         siblings = ("<table><thead><tr><th>#</th><th>School name</th><th>Tuition fees</th>"
                     "<th>Financial Assistance</th><th>AUB ID</th></tr></thead>"
@@ -673,6 +693,9 @@ if S.page == 1:
         (st.success if msg[0] == "ok" else st.error)(msg[1])
 
     section("Student Information")
+    st.markdown("<div class='hint'>Tip: to enter two values in one field (for example two IDs), "
+                "separate them with <b>/</b> — e.g. <i>202412345 / 202398765</i>. "
+                "They will print one under the other.</div>", unsafe_allow_html=True)
 
     text_field("Student name", "student_name", autocomplete="off")
     text_field("AUB ID", "aub_id")
