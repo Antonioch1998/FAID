@@ -100,8 +100,8 @@ DEFAULTS = {
     # Page 1 – student
     "hide_name": True, "student_name": "", "aub_id": "", "slate_id": "",
     "school_name": "", "residing_in": "", "major": "", "class_year": None, "class_other": "",
-    "gpa": None, "deferred_payment": None, "outstanding_balance": None,
-    "faid_pct": None, "merit_pct": None, "oa": None,
+    "gpa": "", "deferred_payment": None, "outstanding_balance": "",
+    "faid_pct": "", "merit_pct": "", "oa": "",
     # Page 3 – siblings / cars / properties
     "sib_ids": [], "next_sib": 0,
     "cars_faid": "", "cars_nef3a": "",
@@ -110,19 +110,19 @@ DEFAULTS = {
 }
 for p, _ in PARENTS:
     DEFAULTS.update({f"{p}_status": None, f"{p}_employer": "",
-                     f"{p}_job": "", f"{p}_income": None,
+                     f"{p}_job": "", f"{p}_income": "",
                      f"{p}_had_prev": False,
                      f"{p}_occ_ids": [], f"{p}_next_occ": 0})
 
 
 def sib_keys(sid):
-    return {f"sib_{sid}_school": "", f"sib_{sid}_tuition": None,
+    return {f"sib_{sid}_school": "", f"sib_{sid}_tuition": "",
             f"sib_{sid}_isaub": False, f"sib_{sid}_aubid": "", f"sib_{sid}_faid": ""}
 
 
 def occ_keys(p, oid):
     """Fields of an extra occupation for a parent (p = 'father' or 'mother')."""
-    return {f"{p}_occ{oid}_employer": "", f"{p}_occ{oid}_job": "", f"{p}_occ{oid}_income": None}
+    return {f"{p}_occ{oid}_employer": "", f"{p}_occ{oid}_job": "", f"{p}_occ{oid}_income": ""}
 
 
 def dynamic_keys():
@@ -155,15 +155,15 @@ def text_field(label, key, **kw):
 
 
 def number_field(label, key, **kw):
-    st.number_input(label, key=key, placeholder=label, label_visibility="collapsed", **kw)
+    text_field(label, key)          # free text: numbers, words or both
 
 
 def money_field(label, key):
-    number_field(label, key, min_value=0.0, step=100.0, format="%.2f")
+    text_field(label, key)
 
 
 def pct_field(label, key):
-    number_field(label, key, min_value=0.0, max_value=100.0, step=1.0, format="%.1f")
+    text_field(label, key)
 
 
 def select_field(label, options, key):
@@ -249,7 +249,7 @@ def filled_occs(p):
     """Extra occupations that actually have something entered (empty ones are not printed)."""
     return [oid for oid in S[f"{p}_occ_ids"]
             if S[f"{p}_occ{oid}_employer"].strip() or S[f"{p}_occ{oid}_job"].strip()
-            or S[f"{p}_occ{oid}_income"] is not None]
+            or str(S[f"{p}_occ{oid}_income"]).strip()]
 
 
 def class_text():
@@ -272,12 +272,33 @@ def opt(v):
     return v if v else "—"
 
 
+def _num(v):
+    """The value as a number if it is just a number (commas allowed), otherwise None."""
+    try:
+        return float(str(v).replace(",", "").strip())
+    except ValueError:
+        return None
+
+
 def money(v):
-    return "—" if v is None else f"${v:,.0f}"
+    v = "" if v is None else str(v).strip()
+    if not v:
+        return "—"
+    n = _num(v)
+    return f"${n:,.0f}" if n is not None else v
 
 
 def pct(v):
-    return "—" if v is None else f"{v:g}%"
+    v = "" if v is None else str(v).strip()
+    if not v:
+        return "—"
+    n = _num(v)
+    return f"{n:g}%" if n is not None else v
+
+
+def gpa_text():
+    v = str(S.gpa or "").strip()
+    return v if v else "—"
 
 
 def raw(v):
@@ -353,7 +374,7 @@ def build_print_html():
     ])
     # ── academic ──
     academic_tiles = "".join([
-        tile("Cumulative GPA", "—" if S.gpa is None else f"{S.gpa:.2f}"),
+        tile("Cumulative GPA", gpa_text()),
         tile("Major", txt(S.major)), tile("Class", class_text()),
         tile("Previous school", txt(S.school_name)),
     ])
@@ -581,6 +602,8 @@ def _clean(value, default):
         return None if default is None else default
     if isinstance(default, bool):
         return bool(value)
+    if isinstance(default, str) and isinstance(value, (int, float)):
+        return str(int(value)) if float(value).is_integer() else str(value)
     if default is None:                      # number fields
         return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) \
             else (value if isinstance(value, str) and value in ("Yes", "No") else None)
@@ -658,8 +681,7 @@ if S.page == 1:
     select_field("Class", CLASSES, "class_year")
     if S.class_year == "Other":
         text_field("Specify the class", "class_other")
-    number_field("Cumulative GPA (0.00 – 4.30)", "gpa",
-                 min_value=0.0, max_value=4.3, step=0.01, format="%.2f")
+    text_field("Cumulative GPA", "gpa")
 
     section("Financial Standing")
     select_field("Deferred payment", ["Yes", "No"], "deferred_payment")
@@ -761,7 +783,7 @@ elif S.page == 3:
 - AUB ID: {txt(S.aub_id)} | Slate ID: {txt(S.slate_id)}
 - School: {txt(S.school_name)} | Residing in: {txt(S.residing_in)}
 - Major: {txt(S.major)} | Class: {class_text()}
-- GPA: {'—' if S.gpa is None else f'{S.gpa:.2f}'}
+- GPA: {gpa_text()}
 - Deferred payment: {opt(S.deferred_payment)} | Outstanding balance: {money(S.outstanding_balance)}
 - FAID: {pct(S.faid_pct)} | Merit: {pct(S.merit_pct)} | O&A: {pct(S.oa)}
 """)
