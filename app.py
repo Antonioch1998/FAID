@@ -19,6 +19,10 @@ st.set_page_config(page_title=FORM_TITLE, page_icon="📝", layout="centered")
 
 CLASSES = ["Freshman", "Sophomore", "Junior", "Senior", "Fourth Year", "Graduate", "Other"]
 STATUSES = ["Employed", "Unemployed", "Self-Employed"]
+STAFF = ["Antonio Chakhtoura", "Chirine Rammal", "Haroutioun Agopian", "Julien Touma"]
+# Signature printed next to the title for each "Prepared by" name.
+SIGNATURES = {"antonio chakhtoura": "AC", "chirine rammal": "CR",
+              "haroutioun agopian": "HA", "julien touma": "JT"}
 PARENTS = [("father", "Father"), ("mother", "Mother")]
 STEPS = ["Student", "Parents", "Siblings & Assets"]
 
@@ -107,7 +111,7 @@ DEFAULTS = {
     "sib_ids": [], "next_sib": 0,
     "cars_faid": "", "cars_nef3a": "",
     "props_faid": "", "props_cert": "",
-    "comments": "",
+    "comments": "", "prepared_by": None,
 }
 for p, _ in PARENTS:
     DEFAULTS.update({f"{p}_status": None, f"{p}_employer": "",
@@ -252,6 +256,14 @@ def filled_occs(p):
     return [oid for oid in S[f"{p}_occ_ids"]
             if S[f"{p}_occ{oid}_employer"].strip() or S[f"{p}_occ{oid}_job"].strip()
             or str(S[f"{p}_occ{oid}_income"]).strip()]
+
+
+def signature():
+    """Initials shown on the printout for the person in 'Prepared by'."""
+    name = " ".join(str(S.prepared_by or "").split())
+    if not name:
+        return ""
+    return SIGNATURES.get(name.lower()) or "".join(w[0] for w in name.split())[:3].upper()
 
 
 def class_text():
@@ -461,6 +473,7 @@ def build_print_html():
   .top {{ background: linear-gradient(120deg, {RED} 0%, {RED_DARK} 100%); color: #fff;
           border-radius: 12px; padding: 14px 18px; display: flex; justify-content: space-between;
           align-items: flex-end; }}
+  .sig {{ font-size: 7px; font-weight: 600; letter-spacing: .4px; color: rgba(255,255,255,.55); line-height: 1; }}
   .top .kicker {{ font-size: 9px; letter-spacing: 1.6px; text-transform: uppercase; opacity: .8; }}
   .top h1 {{ margin: 2px 0 0; font-size: 19px; font-weight: 700; letter-spacing: .2px; }}
   .top .meta {{ text-align: right; font-size: 9.5px; opacity: .9; line-height: 1.5; }}
@@ -540,6 +553,7 @@ def build_print_html():
 <div class="page">
 <div class="top">
   <div><div class="kicker">{e(FORM_SUBTITLE)}</div><h1>{e(FORM_TITLE)}</h1></div>
+  {f'<div class="sig">{e(signature())}</div>' if signature() else ""}
 </div>
 
 <div class="cols"><div>
@@ -642,7 +656,7 @@ def load_case():
         for k in CASE_KEYS:
             if k in fields:
                 default = DEFAULTS[k]
-                if k in ("class_year", "deferred_payment") or k.endswith("_status"):
+                if k in ("class_year", "deferred_payment", "prepared_by") or k.endswith("_status"):
                     v = fields[k]
                     S[k] = v if isinstance(v, str) and v else None
                 else:
@@ -829,8 +843,12 @@ elif S.page == 3:
 **Properties** — FAID: {txt(S.props_faid)} | Certificate: {txt(S.props_cert)}
 
 **Case** — {txt(S.comments)}
+
+**Prepared by** — {opt(S.prepared_by)}{f" (signature: {signature()})" if signature() else ""}
 """)
 
+    section("Prepared by")
+    select_field("Prepared by", STAFF, "prepared_by")
     st.markdown("<div class='hint'>In the print window, choose your printer, or choose "
                 "<b>Save as PDF</b> to keep a copy on your computer.</div>", unsafe_allow_html=True)
     print_buttons("page3")
